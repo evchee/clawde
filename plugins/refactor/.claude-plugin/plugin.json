@@ -1,0 +1,8 @@
+{
+  "name": "refactor",
+  "description": "Suggests and applies refactoring patterns to improve code quality",
+  "version": "1.0.0",
+  "author": {
+    "name": "evchee"
+  }
+}

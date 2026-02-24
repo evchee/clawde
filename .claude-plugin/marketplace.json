@@ -1,0 +1,57 @@
+{
+  "name": "clawde",
+  "owner": {
+    "name": "evchee"
+  },
+  "metadata": {
+    "description": "A collection of developer productivity plugins for Claude Code",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "code-review",
+      "source": "./plugins/code-review",
+      "description": "Code review skill that checks for bugs, security issues, and best practices",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "development",
+      "tags": ["review", "quality", "security"]
+    },
+    {
+      "name": "explain-code",
+      "source": "./plugins/explain-code",
+      "description": "Explains code in plain language with architecture diagrams and complexity analysis",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "learning",
+      "tags": ["explain", "documentation", "learning"]
+    },
+    {
+      "name": "test-gen",
+      "source": "./plugins/test-gen",
+      "description": "Generates comprehensive test suites for your code with edge cases and mocks",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "testing",
+      "tags": ["testing", "unit-tests", "coverage"]
+    },
+    {
+      "name": "refactor",
+      "source": "./plugins/refactor",
+      "description": "Suggests and applies refactoring patterns to improve code quality",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "development",
+      "tags": ["refactor", "clean-code", "patterns"]
+    }
+  ]
+}
