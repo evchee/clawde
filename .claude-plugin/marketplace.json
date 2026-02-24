@@ -52,6 +52,17 @@
       },
       "category": "development",
       "tags": ["refactor", "clean-code", "patterns"]
+    },
+    {
+      "name": "graphite-context",
+      "source": "./plugins/graphite-context",
+      "description": "Detects Graphite and injects stack context at session start",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "workflow",
+      "tags": ["graphite", "stacked-prs", "context"]
     }
   ]
 }
