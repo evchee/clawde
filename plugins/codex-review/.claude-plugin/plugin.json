@@ -1,0 +1,8 @@
+{
+  "name": "codex-review",
+  "description": "Iteratively runs codex exec review, evaluates issues, fixes valid ones, and repeats until clean",
+  "version": "1.0.0",
+  "author": {
+    "name": "evchee"
+  }
+}
