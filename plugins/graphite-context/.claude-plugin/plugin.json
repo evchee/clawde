@@ -1,8 +1,0 @@
-{
-  "name": "graphite-context",
-  "description": "Injects Graphite stack context at session start",
-  "version": "1.0.0",
-  "author": {
-    "name": "evchee"
-  }
-}

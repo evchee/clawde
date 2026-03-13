@@ -1,8 +1,0 @@
-{
-  "name": "explain-code",
-  "description": "Explains code in plain language with architecture diagrams and complexity analysis",
-  "version": "1.0.0",
-  "author": {
-    "name": "evchee"
-  }
-}
