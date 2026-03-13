@@ -4,43 +4,18 @@
     "name": "evchee"
   },
   "metadata": {
-    "description": "A collection of developer productivity plugins for Claude Code",
-    "version": "1.1.0",
-    "pluginRoot": "./plugins"
+    "description": "Developer productivity plugins for Claude Code",
+    "version": "2.0.0"
   },
   "plugins": [
     {
-      "name": "graphite-context",
-      "source": "./plugins/graphite-context",
-      "description": "Detects Graphite and injects stack context at session start",
+      "name": "evchee",
+      "source": ".",
+      "description": "Codex review skills and Graphite context hooks",
       "version": "1.0.0",
       "author": {
         "name": "evchee"
-      },
-      "category": "workflow",
-      "tags": ["graphite", "stacked-prs", "context"]
-    },
-    {
-      "name": "codex-review",
-      "source": "./plugins/codex-review",
-      "description": "Iteratively runs codex exec review, evaluates issues, fixes valid ones, and repeats until clean",
-      "version": "1.0.0",
-      "author": {
-        "name": "evchee"
-      },
-      "category": "development",
-      "tags": ["codex", "review", "quality", "iterative"]
-    },
-    {
-      "name": "codex-reviewed-plan",
-      "source": "./plugins/codex-reviewed-plan",
-      "description": "Drafts an implementation plan, then iteratively reviews it with codex exec and refines until no actionable issues remain",
-      "version": "1.0.0",
-      "author": {
-        "name": "evchee"
-      },
-      "category": "development",
-      "tags": ["codex", "planning", "iterative", "implementation"]
+      }
     }
   ]
 }

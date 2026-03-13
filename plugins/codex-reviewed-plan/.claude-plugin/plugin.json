@@ -1,8 +1,0 @@
-{
-  "name": "codex-reviewed-plan",
-  "description": "Drafts an implementation plan, then iteratively reviews it with codex exec and refines until no actionable issues remain",
-  "version": "1.0.0",
-  "author": {
-    "name": "evchee"
-  }
-}
