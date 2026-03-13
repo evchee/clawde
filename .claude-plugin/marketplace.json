@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "evchee",
-      "source": ".",
+      "source": "./plugin",
       "description": "Codex review skills and Graphite context hooks",
       "version": "1.0.0",
       "author": {
