@@ -1,8 +1,0 @@
-{
-  "name": "test-gen",
-  "description": "Generates comprehensive test suites for your code with edge cases and mocks",
-  "version": "1.0.0",
-  "author": {
-    "name": "evchee"
-  }
-}

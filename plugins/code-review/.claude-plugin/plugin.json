@@ -1,8 +1,0 @@
-{
-  "name": "code-review",
-  "description": "Code review skill that checks for bugs, security issues, and best practices",
-  "version": "1.0.0",
-  "author": {
-    "name": "evchee"
-  }
-}
