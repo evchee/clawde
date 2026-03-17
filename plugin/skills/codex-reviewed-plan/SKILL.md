@@ -13,6 +13,19 @@ Takes a description of what to implement, drafts a plan, then repeatedly runs `c
 - A path to an existing plan file to review as-is (e.g. `/tmp/plan.md`)
 - Empty — ask the user what they want to implement before proceeding
 
+## Step 0: Launch Isolated Agent
+
+Use the `Agent` tool (subagent_type: `general-purpose`) to run the entire
+plan-draft-and-review workflow in an isolated context. Pass:
+
+- The value of $ARGUMENTS (description, file path, or empty)
+- The current working directory
+- The full instructions from Steps 1–4 of this skill
+
+Wait for the agent to complete and present its findings to the user.
+
+---
+
 ## Step 1: Determine Input Mode
 
 Parse `$ARGUMENTS`:
@@ -49,11 +62,17 @@ Wait for confirmation before proceeding. If the user requests changes, apply the
 
 ## Step 3: Run Review Loop
 
+Initialize before the loop:
+```
+PLAN_UPDATES=""   # accumulates one-line descriptions of plan edits per iteration
+ITERATION=0
+```
+
 Repeat the following loop until the review output contains no valid, actionable issues (maximum 10 iterations):
 
 ### Step 3a: Run `codex exec` to review the plan
 
-Replace `$PLAN_FILE` with the actual file path in the command:
+**Iteration 1** — run a full review from scratch. Replace `$PLAN_FILE` with the actual file path in the command:
 
 ```bash
 codex exec "You are reviewing an implementation plan stored at $PLAN_FILE.
@@ -80,9 +99,29 @@ Priority guide:
 If the plan is sound with no actionable issues, output exactly:
   LGTM
 
-Do NOT make any changes to files. Only review and report." 2>&1 | tee /tmp/codex-reviewed-plan-raw.txt
+Do NOT make any changes to files. Only review and report." \
+  -o /tmp/codex-reviewed-plan-output.txt 2>&1 | tee /tmp/codex-reviewed-plan-raw.txt
+```
+
+If `-o` flag is not supported or fails, fall back to:
+```bash
+codex exec "..." 2>&1 | tee /tmp/codex-reviewed-plan-raw.txt
 wc -l /tmp/codex-reviewed-plan-raw.txt
 ```
+
+**Iterations 2+** — resume the existing session with a targeted prompt listing what was updated:
+```bash
+codex exec resume --last \
+  "I applied the following updates to the plan since the last review:
+$PLAN_UPDATES
+
+Please re-check the plan for any remaining issues.
+Output each issue as [P1|P2|P3] <short title> — <explanation>.
+If no actionable issues remain, output exactly: LGTM" \
+  -o /tmp/codex-reviewed-plan-output.txt 2>&1 | tee /tmp/codex-reviewed-plan-raw.txt
+```
+
+Then read `/tmp/codex-reviewed-plan-output.txt` for analysis.
 
 ### Step 3b: Parse and Evaluate Issues
 
@@ -118,11 +157,16 @@ Skipped issues (with reason):
 
 ### Step 3d: Check for Completion
 
-If the output contains `LGTM` and there are zero valid issues, exit the loop and go to Step 4 (Done).
+If the output contains `LGTM`, or if there are zero valid issues, exit the loop and go to Step 4 (Done).
 
 If the maximum iteration count (10) is reached with remaining valid issues, report them to the user and ask whether to continue for another 10 iterations. If yes, reset the counter and continue.
 
 ### Step 3e: Update the Plan
+
+Reset the updates accumulator so only this iteration's changes are sent to the next resume prompt:
+```
+PLAN_UPDATES=""
+```
 
 For each valid issue, in priority order (P1 first):
 
@@ -131,12 +175,17 @@ For each valid issue, in priority order (P1 first):
 3. If the issue references codebase details, **read the relevant source file** to confirm before editing
 4. **Edit the plan** using the Edit tool to address the issue
 
+After each plan edit is applied, append a one-line description to `PLAN_UPDATES`:
+```
+PLAN_UPDATES="$(printf '%s\n- <section/topic>: <what was changed>' "$PLAN_UPDATES")"
+```
+
 **Editing guidelines:**
 - Make targeted edits — do not rewrite sections unaffected by the issue
 - Preserve the plan's existing structure and style
 - If an issue is ambiguous or the correct fix is unclear, skip it and flag it for the user
 
-After all updates are applied, go back to **Step 3a** for the next iteration.
+After all updates are applied, increment `ITERATION` and go back to **Step 3a** for the next iteration.
 
 ## Step 4: Done
 
