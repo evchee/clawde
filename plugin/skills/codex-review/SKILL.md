@@ -57,11 +57,17 @@ Tell the user which base branch was selected and how it was detected.
 
 ## Step 2: Run Review Loop
 
+Initialize before the loop:
+```
+FIXES_APPLIED=""   # tracks fixes applied in the previous iteration (sent to resume prompt)
+ITERATION=0
+```
+
 Repeat the following loop until the review output contains no valid, actionable issues (maximum 10 iterations to avoid infinite loops):
 
-### Step 2a: Run `codex exec review`
+### Step 2a: Run `codex exec review` (iteration 1) or `codex exec resume` (iterations 2+)
 
-Save the review output to a temp file to avoid truncation:
+**Iteration 1** — run a full review from scratch:
 ```bash
 codex exec review --base "$BASE_BRANCH" -o /tmp/codex-review-output.txt 2>&1 | tee /tmp/codex-review-raw.txt
 ```
@@ -70,6 +76,18 @@ If `-o` flag is not supported or fails, run without it:
 ```bash
 codex exec review --base "$BASE_BRANCH" 2>&1 | tee /tmp/codex-review-raw.txt
 wc -l /tmp/codex-review-raw.txt
+```
+
+**Iterations 2+** — resume the existing session with a targeted prompt listing what was fixed:
+```bash
+codex exec resume --last \
+  "I applied the following fixes since the last review:
+$FIXES_APPLIED
+
+Please re-check the diff for any remaining issues.
+Output each issue as [P1|P2|P3] file:line — description.
+If no actionable issues remain, output exactly: LGTM" \
+  -o /tmp/codex-review-output.txt 2>&1 | tee /tmp/codex-review-raw.txt
 ```
 
 Then read the output file for analysis.
@@ -116,11 +134,16 @@ Skipped issues (with reason):
 
 ### Step 2d: Check for Completion
 
-If there are **zero valid issues**, exit the loop and go to Step 3 (Done).
+If the output contains exactly `LGTM` (output by codex as an explicit clean signal), or if there are **zero valid issues**, exit the loop and go to Step 3 (Done).
 
 If the maximum iteration count (10) is reached with remaining valid issues, report the remaining issues to the user and ask whether to continue for another 10 iterations. If the user says yes, reset the iteration counter to 0 and continue the loop.
 
 ### Step 2e: Fix Valid Issues
+
+Reset the fixes accumulator so only this iteration's fixes are sent to the next resume prompt:
+```
+FIXES_APPLIED=""
+```
 
 For each valid issue, in order of file path (to minimize context switching):
 
@@ -136,7 +159,12 @@ For each valid issue, in order of file path (to minimize context switching):
 - If a fix requires changes in multiple files (e.g. updating a function signature and all callers), assess whether it's safe to do so; if risky, note it and skip with explanation
 - If unsure whether a fix is correct, skip it and explain why to the user
 
-After all fixes are applied, go back to **Step 2a** for the next iteration.
+After each fix is applied, append a one-line description to `FIXES_APPLIED`:
+```
+FIXES_APPLIED="$(printf '%s\n- <file>:<line>: <what was changed>' "$FIXES_APPLIED")"
+```
+
+After all fixes are applied, increment `ITERATION` and go back to **Step 2a** for the next iteration.
 
 ## Step 3: Done
 
