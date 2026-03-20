@@ -16,6 +16,17 @@
       "author": {
         "name": "evchee"
       }
+    },
+    {
+      "name": "copywrite",
+      "source": "./plugins/copywrite",
+      "description": "Business writing coach applying Mark Morris's Better Business Writing Skills methodology",
+      "version": "1.0.0",
+      "author": {
+        "name": "evchee"
+      },
+      "category": "writing",
+      "tags": ["writing", "business", "editing", "clarity"]
     }
   ]
 }
