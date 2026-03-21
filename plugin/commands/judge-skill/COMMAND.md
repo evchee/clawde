@@ -1,113 +1,144 @@
 ---
 name: judge-skill
-description: "Analyse a Claude Code skill or command and output a structured assessment using the stopgap skill framework: verdict (Delete / Aggressively Trim / Phase Out / Keep), what it does, unwanted triggering risk (for skills), assessment, and underlying issues categorised as CLI Stopgap / Doc Stopgap / Process Stopgap / Not an Issue."
+description: "Analyse a Claude Code skill or command. Understand what it does and gather nuance (migration tool? LLM-heavy?), decompose into underlying issues, classify each (CLI Stopgap / Doc Stopgap / Process Stopgap / Justified / Temporary / Unnecessary), then produce a structured assessment with verdict (Delete / Trim / Phase Out / Keep) in the standard format."
 ---
 
 # Judge Skill
 
-Analyse a Claude Code skill or command and produce a structured assessment using the stopgap skill framework.
+Analyse a Claude Code skill or command using the stopgap skill framework.
 
 ## Arguments
 
-`$ARGUMENTS` should be one of:
-- A skill name (e.g. `rapid`, `conductor`, `atlas:go-test`)
-- A path to a skill file or directory
-- A plugin marketplace name and skill (e.g. `datadog-claude-plugins/dd/skills/conductor`)
-
-If no argument is provided, ask the user which skill to analyse.
-
-## Verdicts
-
-There are exactly four possible verdicts. Apply the first one that fits:
-
-- **Delete** — The skill provides no value Claude doesn't already have natively. Remove entirely, possibly with a one-line AGENTS.md entry if the tool's existence is non-obvious.
-- **Aggressively Trim** — The skill contains real non-obvious constraints or gotchas, but is buried in boilerplate, examples, or `--help` redocumentation. Strip to a thin signpost (~20-50 lines): key constraints, what NOT to do, existence of the CLI. No examples, no step-by-step tutorials.
-- **Phase Out** — The skill's value exists only because underlying tooling (CLI, docs, process) is missing. The skill is correct to exist _now_ but should be deleted once the root gaps are addressed.
-- **Keep** — The skill requires genuine LLM judgment that cannot be replaced by a CLI command, better docs, or process change. Minor trimming only.
-
-## Step 1: Locate and Read All Files
-
-Find the skill's files. Check these locations in order:
-1. The path provided in `$ARGUMENTS` directly
-2. `~/.claude/plugins/marketplaces/*/skills/$ARGUMENTS/`
-3. `~/.claude/plugins/cache/*/skills/$ARGUMENTS/`
-4. `~/evchee/clawde/plugin/skills/$ARGUMENTS/`
-
-Read **every file** in the skill directory: SKILL.md or COMMAND.md, all companion docs, all scripts, all examples. Note the file count and total line count.
-
-If the skill has sub-agents or agent definitions, read those too (typically in a sibling `agents/` directory).
-
-## Step 2: Research Ground Truth
-
-For each CLI tool the skill mentions, verify what actually exists today:
-
-- Run `<tool> --help` or `<tool> <subcommand> --help` to confirm what flags and subcommands exist
-- Search the codebase for the CLI source if available: does the subcommand the skill documents actually exist?
-- For each "non-obvious" constraint the skill documents, check: is it in `--help`? Is it in a README? Is it derivable from reading existing code in the repo?
-- For each error table or troubleshooting entry, check: does a `doctor` or `validate` command already handle this?
-
-The goal is to distinguish between:
-- Knowledge the skill invents (not derivable from any tool or code)
-- Knowledge the skill duplicates (already in `--help`, README, or existing code patterns)
-
-## Step 3: Identify the Core Value
-
-Ask these questions to find what, if anything, is genuinely non-obvious:
-
-1. **Tribal knowledge**: Facts only discoverable by getting burned or asking the right person (e.g. "Tuesday-only deploys", "use GovSlack not regular Slack").
-2. **Silent failure modes**: Behaviours that succeed with wrong results and produce no error (e.g. "schedules silently don't run without `schedules.enabled: true`").
-3. **Misleading error messages**: Cases where the CLI produces a confusing error when a simple rule is violated.
-4. **Judgment orchestration**: Multi-step workflows that require LLM judgment at each step — not just command execution.
-5. **Cross-system coordination**: Workflows that span multiple tools with no single CLI owning the flow.
-
-Knowledge that passes one of these tests is genuinely non-obvious. Everything else is documentation or code generation that belongs elsewhere.
-
-## Step 4: Identify Underlying Issues
-
-For each gap the skill compensates for, categorise it:
-
-- **CLI Stopgap** — A command, subcommand, flag, or validation rule that doesn't exist in the CLI but should. The skill exists because the CLI is incomplete.
-- **Doc Stopgap** — Information that should be in a `--help` output, README, godoc comment, or SDK documentation but isn't. The skill is a substitute for missing documentation.
-- **Process Stopgap** — A coordination, ownership, or workflow gap that no single tool owns. Often spans multiple teams or systems.
-- **Not an Issue** — The skill compensates for something that is already provided natively by Claude or standard tools (e.g. `gh pr checks`, `git add -p`). Indicates the content should simply be deleted.
-
-## Step 5: Assess Triggering Risk (skills only)
-
-If the target is a `SKILL.md` (user-invocable, not a command), assess the unwanted triggering risk:
-
-- **Low** — Trigger phrases are specific to the domain. Claude won't fire this for unrelated requests.
-- **Moderate** — Some trigger phrases are generic enough to fire on unrelated work. The skill gates on a codebase check (e.g. presence of a config file) but still loads context before that check.
-- **High** — Trigger phrases are among the most common things any developer says to Claude (e.g. "run my service", "how do I test", "deploy this"). Will fire constantly on non-target codebases.
-
-## Step 6: Write the Assessment
-
-Output the assessment in this exact format:
+`$ARGUMENTS`: skill name, path, or `plugin/skill` reference (e.g. `rapid`, `atlas:go-test`, `datadog-claude-plugins/dd/skills/conductor`). Ask if not provided.
 
 ---
 
+## Phase 1: Read Everything
+
+Locate the skill. Check in order:
+1. Path given in `$ARGUMENTS`
+2. `~/.claude/plugins/marketplaces/*/skills/$ARGUMENTS/`
+3. `~/.claude/plugins/cache/*/skills/$ARGUMENTS/`
+4. `~/evchee/clawde/plugin/skills/$ARGUMENTS/` or `~/evchee/clawde/plugin/commands/$ARGUMENTS/`
+
+Read **every file**: SKILL.md or COMMAND.md, all companion docs, all scripts, all examples, all sub-agent definitions. Record file count and total line count per file.
+
+---
+
+## Phase 2: Understand What It Does and Gather Nuance
+
+Before classifying anything, answer:
+
+**What is it for?**
+- What end-user goal triggers this? What would make someone invoke it?
+- Is it a skill (auto-triggered by keywords) or a command (explicitly invoked)?
+
+**What kind of tool is it?**
+- Is it a **one-time or migration tool**? Will it be retired when the work is complete?
+- Is it domain-specific or broadly applicable?
+- Does it wrap a single CLI or coordinate multiple systems?
+
+**What does it actually contain?**
+- How much is step-by-step tutorial vs. constraint documentation vs. code generation vs. orchestration?
+- What do companion docs, scripts, and sub-agents each do?
+- How large is it relative to what it actually needs to say?
+
+**Triggering risk** (skills only):
+- What are the trigger phrases? Are they generic ("run my service", "how do I test") or specific?
+- Would the user always invoke this explicitly, or could it fire on unrelated requests?
+- If triggers are high-risk and invocation is always explicit → should be a command, not a skill.
+
+---
+
+## Phase 3: Research Ground Truth
+
+Phase 2 established *what* the skill claims. This phase checks *whether those claims add value* by verifying them against authoritative sources.
+
+For each CLI tool the skill mentions:
+- Run `<tool> --help` and `<tool> <subcommand> --help` — does what the skill documents actually exist?
+- Search the codebase: do documented subcommands/flags exist in source?
+- For each constraint or gotcha: is it in `--help`? In a README? Derivable by reading existing code patterns in the repo?
+- For each error table entry: does a `doctor` or `validate` command already auto-diagnose this?
+
+Distinguish clearly:
+- **Invented knowledge** — not derivable from any tool, code, or existing examples
+- **Duplicated knowledge** — already in `--help`, README, or inferrable from existing patterns
+
+---
+
+## Phase 4: Decompose Into Underlying Issues
+
+List every distinct thing the skill does or compensates for. For each one, ask: **why does this need to be in a skill?**
+
+Classify each with exactly one label. For each stopgap, state what would need to exist for the skill to no longer need to address it.
+
+**CLI Stopgap** — A command, subcommand, flag, or validation rule missing from the CLI.
+
+  Feasibility notes — assess before labelling:
+  - *One-time/migration tool*: Gap in a tool that will be retired → label **Temporary** instead (low ROI to fix; the tool will go away).
+  - *LLM judgment mixed in*: If a CLI could handle 70% but 30% still needs LLM interpretation, the deterministic part is CLI Stopgap and the judgment part is **Justified**. If judgment is the whole value, it is entirely **Justified**.
+  - *Multi-repo*: Requires write access across multiple repositories → label **Justified**. Coordinating changes across repo boundaries requires contextual judgment a CLI cannot encode.
+  - *Multi-team*: Requires coordination across teams with different owners → label **Process Stopgap**. This is an ownership/workflow gap, not a technical one.
+  - *Missing installation*: "Command not found" is an installation/onboarding problem, not a feature gap. Label as **Doc Stopgap** if install docs are missing, or **Unnecessary** if the LLM can figure it out once the docs exist.
+  - *Partial scaffold (inline)*: A scaffold that inserts code at arbitrary call sites in existing files (not whole-file generation) is **Justified** — insertion point selection and surrounding context require LLM judgment. A scaffold that generates new whole files from existing metadata (routes, schema) is a CLI Stopgap.
+
+**Doc Stopgap** — Information missing from `--help`, README, godoc, or SDK docs. The skill substitutes for missing documentation.
+
+  Note: Static tribal knowledge (always the same answer regardless of codebase state) is a Doc Stopgap. If the knowledge requires reasoning over the specific codebase context at invocation time, it is **Justified**.
+
+**Process Stopgap** — Coordination or ownership gap spanning multiple teams or systems. No single tool owns the fix.
+
+**Justified** — A skill/LLM approach is the right solution. The task requires contextual judgment, codebase analysis, or interpretation that no deterministic tool can replicate. Building a CLI would not remove the need for LLM involvement.
+
+**Temporary** — A real gap (CLI, doc, or process) in a tool or workflow that will be retired once a migration or one-time task completes. Could have been classified as a stopgap, but fixing it is low ROI because the underlying tool is going away.
+
+**Unnecessary** — The LLM handles this organically. Claude already knows this natively (standard Git, standard `gh` commands), or the concern being addressed is not real.
+
+---
+
+## Phase 5: Determine Verdict
+
+With the decomposed issue list in hand, choose one verdict. If multiple seem to fit, use these rules:
+
+**Delete** — Every underlying issue is Unnecessary, Temporary, or already addressed by existing tools. No remaining value.
+
+**Phase Out** — All genuine issues are stopgaps (CLI/Doc/Process/Temporary). The skill is correct to exist today but should be deleted once those gaps are fixed. Prefer Phase Out over Trim when all the value is stopgap — trimming something you plan to delete is wasted effort. State the specific condition that triggers deletion.
+
+**Trim** — Some issues are Justified or involve genuinely non-obvious constraints (tribal knowledge, silent failures, misleading errors), but the genuine content is buried in boilerplate, examples, or `--help` redocumentation. The real content fits in ~20-50 lines. State exactly which sections survive (by description, not by rewriting them). Applies when there is a mix of Justified/permanent value alongside bloat.
+
+**Keep** — Core value is Justified: genuine LLM judgment, orchestration, or tribal knowledge that no tool or doc can replace. Minor trimming only.
+
+---
+
+## Phase 6: Write the Output
+
 ### `<skill-name>`
 
-**Files:** <count> | **Lines:** <breakdown by file>
-**Depends on:** <other skills or tools this depends on, if any>
+**Files:** `<count>` files | **Lines:** `<file1>: N, file2: N, ...`
+**Depends on:** `<other skills or tools — omit if none>`
 
-**What it does:** When a user wants to [end-user goal], this [skill/command] [one paragraph describing what it actually does, from the user's perspective. What would make someone invoke it?]
+**What it does:** When a user wants to [end-user goal], this [skill/command] [one paragraph from the user's perspective — what would make someone invoke it?]
 
-**Unwanted triggering risk:** [Low / Moderate / High]. [One sentence explanation. Only include for skills, not commands.]
+**Unwanted triggering risk:** [Low / Moderate / High]. [One sentence. Skills only — omit for commands.]
 
-**Assessment:** [Delete / Aggressively Trim / Phase Out / Keep]. [2-4 sentences: what is the genuine value (if any), what is bloat, why this verdict. If Aggressively Trim, end with: "**Trimmed form (~N lines):** [what survives]."]
+**Assessment:** [Delete / Trim / Phase Out / Keep]. [As many sentences as needed. Cover: genuine value if any, what is bloat, why this verdict.
+- If Trim: end with "**Trimmed form (~N lines):** [describe by section what survives — e.g. 'constraints section minus examples, plus error table'. Do not rewrite the content.]"
+- If Phase Out: end with the specific condition that triggers deletion.
+- If Delete: if the tool's existence is non-obvious, note that a one-line AGENTS.md entry may be appropriate.]
 
 **Underlying issues:**
 
-- **[CLI Stopgap / Doc Stopgap / Process Stopgap / Not an Issue]:** [Specific gap. What would need to exist for this skill to be unnecessary?]
-- (repeat for each issue)
+List issues grouped by label (CLI Stopgap first, then Doc, Process, Justified, Temporary, Unnecessary). Within each group, most impactful first.
+
+- **[label]:** [As many sentences as needed. For stopgaps: what would need to exist and any nuance about feasibility? For Justified: why LLM is the right approach and what judgment is required? For Unnecessary: why the LLM handles it organically? For Temporary: what triggers retirement of the tool?]
 
 ---
 
 ## Notes
 
 - Be willing to recommend Delete or Phase Out. Most skills should not exist in their current form.
-- "The skill is the only documentation" is a Doc Stopgap, not a reason to Keep.
-- "The CLI doesn't have this subcommand" is a CLI Stopgap, not a reason to Keep.
-- A skill is only genuinely Keep if it requires LLM judgment that no tool or doc can replace.
-- Aggressively Trim is appropriate when the constraints are real but the surrounding content is boilerplate. State exactly what survives in the trimmed form.
-- Do not conflate "useful information" with "information that belongs in a skill". Useful information belongs in `--help`, READMEs, or godoc. Skills are for orchestration and judgment, not documentation.
+- "The skill is the only documentation" → **Doc Stopgap**, not a reason to Keep.
+- "The CLI doesn't have this subcommand" → **CLI Stopgap**, not a reason to Keep. Assess whether it is actually worth building.
+- A skill is **Keep** only if LLM judgment is the core value and no tool or doc can replace it.
+- Skills where the user would always invoke explicitly → recommend converting to a command.
+- Do not conflate "useful information" with "information that belongs in a skill". Useful information belongs in `--help`, READMEs, or godoc.
