@@ -76,10 +76,10 @@ Classify each with exactly one label. For each stopgap, state what would need to
 
   Feasibility notes — assess before labelling:
   - *One-time/migration tool*: Gap in a tool that will be retired → label **Temporary** instead (low ROI to fix; the tool will go away).
-  - *LLM judgment mixed in*: If a CLI could handle 70% but 30% still needs LLM interpretation, the deterministic part is CLI Stopgap and the judgment part is **Justified**. If judgment is the whole value, it is entirely **Justified**.
-  - *Multi-repo*: Requires write access across multiple repositories → label **Justified**. Coordinating changes across repo boundaries requires contextual judgment a CLI cannot encode.
+  - *LLM judgment mixed in*: If a CLI could handle 70% but 30% still needs LLM interpretation, the deterministic part is CLI Stopgap but the judgment part make it **Justified**. 
+  - *Multi-repo*: Requires write access across multiple repositories → label **Justified**. Coordinating changes across repo boundaries requires contextual judgment a CLI cannot encode easily a this time.
   - *Multi-team*: Requires coordination across teams with different owners → label **Process Stopgap**. This is an ownership/workflow gap, not a technical one.
-  - *Missing installation*: "Command not found" is an installation/onboarding problem, not a feature gap. Label as **Doc Stopgap** if install docs are missing, or **Unnecessary** if the LLM can figure it out once the docs exist.
+  - *Missing installation*: "Command not found" is an installation/onboarding problem, not a feature gap. Label as **Doc Stopgap** if install docs are missing, or **Unnecessary** if the LLM can figure it out with the docs that exist.
   - *Partial scaffold (inline)*: A scaffold that inserts code at arbitrary call sites in existing files (not whole-file generation) is **Justified** — insertion point selection and surrounding context require LLM judgment. A scaffold that generates new whole files from existing metadata (routes, schema) is a CLI Stopgap.
 
 **Doc Stopgap** — Information missing from `--help`, README, godoc, or SDK docs. The skill substitutes for missing documentation.
@@ -90,7 +90,7 @@ Classify each with exactly one label. For each stopgap, state what would need to
 
 **Justified** — A skill/LLM approach is the right solution. The task requires contextual judgment, codebase analysis, or interpretation that no deterministic tool can replicate. Building a CLI would not remove the need for LLM involvement.
 
-**Temporary** — A real gap (CLI, doc, or process) in a tool or workflow that will be retired once a migration or one-time task completes. Could have been classified as a stopgap, but fixing it is low ROI because the underlying tool is going away.
+**Temporary** — A real gap (CLI, doc, or process) in a tool or workflow that will be retired once a migration or one-time task completes. Could have been classified as a stopgap, but fixing it is low ROI because the issue is going away.
 
 **Unnecessary** — The LLM handles this organically. Claude already knows this natively (standard Git, standard `gh` commands), or the concern being addressed is not real.
 
@@ -100,13 +100,13 @@ Classify each with exactly one label. For each stopgap, state what would need to
 
 With the decomposed issue list in hand, choose one verdict. If multiple seem to fit, use these rules:
 
-**Delete** — Every underlying issue is Unnecessary, Temporary, or already addressed by existing tools. No remaining value.
+**Delete** — Every underlying issue is Unnecessary, or already addressed by existing tools. No remaining value.
 
 **Phase Out** — All genuine issues are stopgaps (CLI/Doc/Process/Temporary). The skill is correct to exist today but should be deleted once those gaps are fixed. Prefer Phase Out over Trim when all the value is stopgap — trimming something you plan to delete is wasted effort. State the specific condition that triggers deletion.
 
-**Trim** — Some issues are Justified or involve genuinely non-obvious constraints (tribal knowledge, silent failures, misleading errors), but the genuine content is buried in boilerplate, examples, or `--help` redocumentation. The real content fits in ~20-50 lines. State exactly which sections survive (by description, not by rewriting them). Applies when there is a mix of Justified/permanent value alongside bloat.
+**Trim** — Some issues are Justified or involve genuinely non-obvious constraints (tribal knowledge, silent failures, misleading errors), but the genuine content is buried in boilerplate, examples, or `--help` redocumentation. State exactly which sections survive (by description, not by rewriting them). Applies when there is a mix of Justified/permanent value alongside bloat.
 
-**Keep** — Core value is Justified: genuine LLM judgment, orchestration, or tribal knowledge that no tool or doc can replace. Minor trimming only.
+**Keep** — Core value is Justified: genuine LLM judgment, orchestration, or tribal knowledge that no tool or doc can replace. Minor trimming only. 
 
 ---
 
