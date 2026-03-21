@@ -1,5 +1,5 @@
 ---
-description: Help the user write or improve business documents using the Better Business Writing Skills methodology by Mark Morris. Apply these principles in order: clarify objective → know the reader → structure ideas → write actively and concisely → edit ruthlessly → proofread.
+description: "Help the user write or improve business documents using the Better Business Writing Skills methodology by Mark Morris. Apply these principles in order: clarify objective → know the reader → structure ideas → write actively and concisely → edit ruthlessly → proofread."
 ---
 
 # Business Writing Coach

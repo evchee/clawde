@@ -1,6 +1,6 @@
 ---
 name: judge-skill
-description: Analyse a Claude Code skill or command and output a structured assessment using the stopgap skill framework: verdict (Delete / Aggressively Trim / Phase Out / Keep), what it does, unwanted triggering risk (for skills), assessment, and underlying issues categorised as CLI Stopgap / Doc Stopgap / Process Stopgap / Not an Issue.
+description: "Analyse a Claude Code skill or command and output a structured assessment using the stopgap skill framework: verdict (Delete / Aggressively Trim / Phase Out / Keep), what it does, unwanted triggering risk (for skills), assessment, and underlying issues categorised as CLI Stopgap / Doc Stopgap / Process Stopgap / Not an Issue."
 ---
 
 # Judge Skill
